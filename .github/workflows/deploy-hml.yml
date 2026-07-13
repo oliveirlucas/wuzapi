@@ -1,0 +1,35 @@
+name: wuzapi-hml-deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and publish Docker image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          docker build -f Dockerfile.heroku -t wuzapi-hml .
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          docker tag wuzapi-hml $DOCKER_USERNAME/wuzapi-hml
+          docker push $DOCKER_USERNAME/wuzapi-hml
+
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Deploy to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo $HEROKU_API_KEY | docker login --username=_ --password-stdin registry.heroku.com
+          heroku container:push web --app ${{ secrets.HEROKU_APP_HML }} -f Dockerfile.heroku
+          heroku container:release web --app ${{ secrets.HEROKU_APP_HML }}
