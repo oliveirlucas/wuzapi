@@ -2,6 +2,11 @@ FROM golang:1.25-bookworm AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     pkg-config \
@@ -18,6 +23,12 @@ RUN go build -o wuzapi
 
 FROM debian:bookworm-slim
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     netcat-openbsd \
@@ -39,5 +50,4 @@ RUN chmod +x /app/wuzapi && \
     chmod -R 755 /app && \
     chown -R root:root /app
 
-# Heroku injects $PORT at runtime; WUZAPI_PORT maps directly to the -port flag.
-CMD ["/bin/sh", "-c", "/app/wuzapi --logtype=console --color=true --port=${PORT:-8080}"]
+ENTRYPOINT ["/app/wuzapi", "--logtype=console", "--color=true"]
