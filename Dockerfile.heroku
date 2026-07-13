@@ -40,4 +40,4 @@ RUN chmod +x /app/wuzapi && \
     chown -R root:root /app
 
 # Heroku injects $PORT at runtime; WUZAPI_PORT maps directly to the -port flag.
-CMD /app/wuzapi --logtype=console --color=true --port=${PORT:-8080}
+CMD ["/bin/sh", "-c", "/app/wuzapi --logtype=console --color=true --port=${PORT:-8080}"]
