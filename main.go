@@ -244,6 +244,9 @@ func main() {
 		if v := os.Getenv("WUZAPI_PORT"); v != "" {
 			*port = v
 			log.Info().Str("port", v).Msg("Port configured from environment variable")
+		} else if v := os.Getenv("PORT"); v != "" {
+			*port = v
+			log.Info().Str("port", v).Msg("Port configured from PORT environment variable")
 		}
 	}
 
