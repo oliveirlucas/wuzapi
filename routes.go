@@ -57,6 +57,11 @@ func (s *server) routes() {
 	adminRoutes.Handle("/users/{id}", s.EditUser()).Methods("PUT")
 	adminRoutes.Handle("/users/{id}", s.DeleteUser()).Methods("DELETE")
 	adminRoutes.Handle("/users/{id}/full", s.DeleteUserComplete()).Methods("DELETE")
+	adminRoutes.Handle("/users/{id}/proxy-pool/release", s.ReleaseUserProxyPool()).Methods("POST")
+	adminRoutes.Handle("/proxy-pool", s.ListProxyPool()).Methods("GET")
+	adminRoutes.Handle("/proxy-pool", s.AddProxyPoolEntry()).Methods("POST")
+	adminRoutes.Handle("/proxy-pool/{id}", s.EditProxyPoolEntry()).Methods("PUT")
+	adminRoutes.Handle("/proxy-pool/{id}", s.DeleteProxyPoolEntry()).Methods("DELETE")
 
 	c := alice.New()
 	c = c.Append(s.authalice)
@@ -84,6 +89,9 @@ func (s *server) routes() {
 	s.router.Handle("/session/status", c.Then(s.GetStatus())).Methods("GET")
 	s.router.Handle("/session/qr", c.Then(s.GetQR())).Methods("GET")
 	s.router.Handle("/session/pairphone", c.Then(s.PairPhone())).Methods("POST")
+	s.router.Handle("/session/passkey-response", c.Then(s.PasskeyResponse())).Methods("POST")
+	s.router.Handle("/session/passkey-confirm", c.Then(s.PasskeyConfirm())).Methods("POST")
+	s.router.Handle("/session/passkey-status", c.Then(s.GetPasskeyStatus())).Methods("GET")
 	s.router.Handle("/session/history", c.Then(s.RequestHistorySync())).Methods("GET")
 
 	s.router.Handle("/webhook", c.Then(s.SetWebhook())).Methods("POST")
@@ -114,6 +122,7 @@ func (s *server) routes() {
 	s.router.Handle("/chat/send/location", c.Then(s.SendLocation())).Methods("POST")
 	s.router.Handle("/chat/send/contact", c.Then(s.SendContact())).Methods("POST")
 	s.router.Handle("/chat/react", c.Then(s.React())).Methods("POST")
+	s.router.Handle("/chat/pin", c.Then(s.PinMessage())).Methods("POST")
 	s.router.Handle("/chat/send/buttons", c.Then(s.SendButtons())).Methods("POST")
 	s.router.Handle("/chat/send/list", c.Then(s.SendList())).Methods("POST")
 	s.router.Handle("/chat/send/poll", c.Then(s.SendPoll())).Methods("POST")
@@ -167,6 +176,9 @@ func (s *server) routes() {
 	s.router.Handle("/group/joinapprovalmode", c.Then(s.SetGroupJoinApprovalMode())).Methods("POST")
 
 	s.router.Handle("/newsletter/list", c.Then(s.ListNewsletter())).Methods("GET")
+	s.router.Handle("/newsletter/join", c.Then(s.NewsletterJoin())).Methods("POST")
+	s.router.Handle("/newsletter/leave", c.Then(s.NewsletterLeave())).Methods("POST")
+	s.router.Handle("/newsletter/mute", c.Then(s.NewsletterMute())).Methods("POST")
 
 	s.router.PathPrefix("/").Handler(http.FileServer(http.Dir(exPath + "/static/")))
 }
