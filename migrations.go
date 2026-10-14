@@ -89,7 +89,7 @@ var migrations = []Migration{
 	{
 		ID:    13,
 		Name:  "add_days_to_sync_history",
-		UpSQL: `ALTER TABLE users ADD COLUMN IF NOT EXISTS days_to_sync_history INTEGER DEFAULT 0;`,
+		UpSQL: addDaysToSyncHistorySQL,
 	},
 	{
 		ID:    14,
@@ -108,7 +108,12 @@ CREATE TABLE IF NOT EXISTS proxy_pool (
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-ALTER TABLE users ADD COLUMN IF NOT EXISTS proxy_pool_id TEXT REFERENCES proxy_pool(id) ON DELETE RESTRICT;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'users' AND column_name = 'proxy_pool_id') THEN
+        ALTER TABLE users ADD COLUMN proxy_pool_id TEXT REFERENCES proxy_pool(id) ON DELETE RESTRICT;
+    END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_users_proxy_pool_id ON users (proxy_pool_id);
 
 -- SQLite version (handled in code)
@@ -268,7 +273,12 @@ END $$;
 
 const addWebhookUseProxySQL = `
 -- PostgreSQL version
-ALTER TABLE users ADD COLUMN IF NOT EXISTS webhook_use_proxy BOOLEAN DEFAULT TRUE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'users' AND column_name = 'webhook_use_proxy') THEN
+        ALTER TABLE users ADD COLUMN webhook_use_proxy BOOLEAN DEFAULT TRUE;
+    END IF;
+END $$;
 
 -- SQLite version (handled in code)
 `
@@ -277,8 +287,24 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS webhook_use_proxy BOOLEAN DEFAULT TRU
 // also used an information_schema lookup that was not scoped to the active
 // schema. Keep this as a separate, globally unused migration ID so databases
 // that already recorded a different migration 10 or 11 are repaired.
+// ADD COLUMN IF NOT EXISTS requires PostgreSQL 9.6+; the production database
+// runs 9.5, so new columns are guarded with an information_schema lookup.
 const repairWebhookUseProxySQL = `
-ALTER TABLE users ADD COLUMN IF NOT EXISTS webhook_use_proxy BOOLEAN DEFAULT TRUE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'users' AND column_name = 'webhook_use_proxy') THEN
+        ALTER TABLE users ADD COLUMN webhook_use_proxy BOOLEAN DEFAULT TRUE;
+    END IF;
+END $$;
+`
+
+const addDaysToSyncHistorySQL = `
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'users' AND column_name = 'days_to_sync_history') THEN
+        ALTER TABLE users ADD COLUMN days_to_sync_history INTEGER DEFAULT 0;
+    END IF;
+END $$;
 `
 
 // GenerateRandomID creates a random string ID
